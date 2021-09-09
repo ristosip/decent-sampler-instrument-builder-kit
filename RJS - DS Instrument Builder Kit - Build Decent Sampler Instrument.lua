@@ -103,7 +103,7 @@ default_use_groups_level_tuning = true
 default_silencingMode = "normal"
 
 -- Looping
-default_loopCrossfade = 0.050
+default_loopCrossfade = 12000
 default_loopCrossfadeMode = "linear"
 
 -- ASDR
