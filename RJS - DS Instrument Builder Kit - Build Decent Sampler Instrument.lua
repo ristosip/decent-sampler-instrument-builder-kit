@@ -208,7 +208,7 @@ end
 function parse_group_info_for_mic_num(group_info)
 	local num1
 	local num2
-	local mic_num = -1
+	local mic_num
 	local digit_counter = 0
 	
 	local identifier_found = false
@@ -1387,6 +1387,7 @@ function build_instrument(command, parameter_count)
 		local track = reaper.GetTrack(0, i)
 		local retval, track_name = reaper.GetTrackName(track)
 		local num_items = reaper.CountTrackMediaItems(track)
+		local mic_num
 		
 		if num_items > 0 then
 			
@@ -1437,6 +1438,7 @@ function build_instrument(command, parameter_count)
 					sus_s = nil
 					sus_r = nil
 					--
+					mic_num = parse_group_info_for_mic_num(group_info)
 					local seqPosition = parse_group_info_for_rr_num(group_info)
 					local group_tags = ""
 					if default_use_group_level_mic_tags then
@@ -1459,17 +1461,22 @@ function build_instrument(command, parameter_count)
 						group_decay = leg_d
 						group_sustain = leg_s
 						group_release = leg_r
-						group_tags = append_tags(group_tags, "legato") 
-						silencedByTags = "legato"
+						if mic_num == nil then
+							group_tags = append_tags(group_tags, "legato") 
+							silencedByTags = "legato"
+						else
+							group_tags = append_tags(group_tags, "legato"..mic_num)
+							silencedByTags = "legato"..mic_num
+						end
 						silencingMode = default_silencingMode
 					elseif group_legatosustain and not group_sustain_group then
 						group_trigger = "legato"
 						group_attack = leg_sus_a
 						group_decay = leg_sus_d
 						group_sustain = leg_sus_s
-						group_release = leg_sus_r
+						group_release = leg_sus_r						
 						group_tags = append_tags(group_tags, "legatosustain") 
-						silencedByTags = "legato"
+						silencedByTags = "legato"					
 						silencingMode = default_silencingMode
 					elseif group_sustain_group then
 						group_trigger = "attack" -- "first"
@@ -1493,8 +1500,13 @@ function build_instrument(command, parameter_count)
 						else	
 							group_release = default_group_release
 						end
-						group_tags = append_tags(group_tags, "sustaingroup") 
-						silencedByTags = "legato,sustaingroup"
+						if mic_num == nil then
+							group_tags = append_tags(group_tags, "sustaingroup") 
+							silencedByTags = "legato,sustaingroup"
+						else
+							group_tags = append_tags(group_tags, "sustaingroup"..mic_num) 
+							silencedByTags = "legato,sustaingroup"..mic_num
+						end
 						silencingMode = default_silencingMode
 					end
 					-- form a group
