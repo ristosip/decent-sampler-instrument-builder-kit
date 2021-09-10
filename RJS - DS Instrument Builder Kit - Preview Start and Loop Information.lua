@@ -24,7 +24,8 @@ function parse_notes_for_loop_info(notes)
 	local sub_strings_idx = 0
 	local comma_idx = 0
 	local digit_counter = 0
-	
+	local loop_counter = 0
+
 	while comma_idx ~= nil do
 		comma_idx = string.find(notes, ",", 1) 
 		if comma_idx ~= nil then
@@ -36,6 +37,12 @@ function parse_notes_for_loop_info(notes)
 				sub_strings_idx = sub_strings_idx + 1
 				sub_strings[sub_strings_idx] = notes
 			end
+		end
+		loop_counter = loop_counter + 1
+		if loop_counter > 100 then
+			reaper.ShowConsoleMsg("Got stuck in while parsing loop info. If you used '-' in the item notes, that caused the problem. Use letter 'n' for a negative sign instead. For instance, minus four, n4.")
+			loop_counter = 0
+			break;
 		end
 	end
 	local identifier_found = false
@@ -72,18 +79,25 @@ function parse_notes_for_start_info(notes)
 	local sub_strings_idx = 0
 	local comma_idx = 0
 	local digit_counter = 0
+	local loop_counter = 0
 	
 	while comma_idx ~= nil do
 		comma_idx = string.find(notes, ",", 1) 
 		if comma_idx ~= nil then
 			sub_strings_idx = sub_strings_idx + 1
 			sub_strings[sub_strings_idx] = string.sub(notes, 1, comma_idx)  
-			notes = string.gsub(notes, sub_strings[sub_strings_idx], "")			
+			notes = string.gsub(notes, sub_strings[sub_strings_idx], "")				
 		else
 			if notes ~= nil then
 				sub_strings_idx = sub_strings_idx + 1
 				sub_strings[sub_strings_idx] = notes
 			end
+		end
+		loop_counter = loop_counter + 1
+		if loop_counter > 100 then
+			reaper.ShowConsoleMsg("Got stuck in while parsing start info. If you used '-' in the item notes, that caused the problem. Use letter 'n' for a negative sign instead. For instance, minus four, n4.")
+			loop_counter = 0
+			break;
 		end
 	end
 	local identifier_found = false
