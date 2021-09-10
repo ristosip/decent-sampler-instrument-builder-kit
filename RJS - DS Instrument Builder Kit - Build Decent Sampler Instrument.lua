@@ -1358,6 +1358,35 @@ function count_mics(group_names, group_count)
 	return max_mic_num
 end
 
+function count_round_robins(first_track_idx, num_tracks)
+	local max_rr_num = 0
+	for i = first_track_idx, num_tracks - 1, 1 do	
+		local track = reaper.GetTrack(0, i)
+		local retval, track_name = reaper.GetTrackName(track)
+		local num_items = reaper.CountTrackMediaItems(track)		
+		if num_items > 0 then			
+			for j = 0, num_items - 1, 1 do
+				local sample_silencedByTags, sample_silencingMode, sample_legatoInterval, sample_previousNotes
+				local item = reaper.GetTrackMediaItem(track, j)
+				local retval, group_info = reaper.GetTrackName(reaper.GetParentTrack(track))
+				if group_info == nil then
+					group_info = ""
+				end				
+				local rr_num = parse_group_info_for_rr_num(group_info)
+				if rr_num ~= nil then
+					if rr_num > max_rr_num then
+						max_rr_num = rr_num
+					end
+				end
+			end
+		end
+	end
+	if max_rr_num == 0 then
+		max_rr_num = nil
+	end
+	return max_rr_num
+end
+
 function build_instrument(command, parameter_count)
 	local ds_preset_string = ""
 	local groups_string = ""
@@ -1382,6 +1411,7 @@ function build_instrument(command, parameter_count)
 	local loop_start, loop_end, loop_crossfade
 	local leg_sus_a, leg_sus_d, leg_sus_s, leg_sus_r
 	local sus_a, sus_d, sus_s, sus_r
+	--local max_rr = count_round_robins(first_track_idx, num_tracks) -- not used at the moment, but available if needed
 		
 	for i = first_track_idx, num_tracks - 1, 1 do	
 		local track = reaper.GetTrack(0, i)
@@ -1504,8 +1534,8 @@ function build_instrument(command, parameter_count)
 							group_tags = append_tags(group_tags, "sustaingroup") 
 							silencedByTags = "legato,sustaingroup"
 						else
-							group_tags = append_tags(group_tags, "sustaingroup"..mic_num) 
-							silencedByTags = "legato,sustaingroup"..mic_num
+							group_tags = append_tags(group_tags, "sustaingroup"..mic_num) 							
+							silencedByTags = "legato1,sustaingroup"..mic_num -- note: 'legato1' - uses mic1 group to silence.
 						end
 						silencingMode = default_silencingMode
 					end
