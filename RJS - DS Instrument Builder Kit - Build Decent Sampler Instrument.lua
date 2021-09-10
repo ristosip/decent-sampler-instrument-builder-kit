@@ -248,6 +248,7 @@ function parse_notes_for_loop_info(notes)
 	local sub_strings_idx = 0
 	local comma_idx = 0
 	local digit_counter = 0
+	local loop_counter = 0
 	
 	while comma_idx ~= nil do
 		comma_idx = string.find(notes, ",", 1) 
@@ -260,6 +261,12 @@ function parse_notes_for_loop_info(notes)
 				sub_strings_idx = sub_strings_idx + 1
 				sub_strings[sub_strings_idx] = notes
 			end
+		end
+		loop_counter = loop_counter + 1
+		if loop_counter > 100 then
+			reaper.ShowConsoleMsg("Got stuck in while parsing loop info. If you used '-' in the item notes, that caused the problem. Use letter 'n' for a negative sign instead. For instance, minus four, n4.")
+			loop_counter = 0
+			break;
 		end
 	end
 	local identifier_found = false
@@ -301,7 +308,7 @@ function parse_notes_for_legato_info(notes)
 	local sub_strings_idx = 0
 	local comma_idx = 0
 	local digit_counter = 0
-	local loop_count = 0
+	local loop_counter = 0
 	
 	while comma_idx ~= nil do
 		comma_idx = string.find(notes, ",", 1) 
@@ -314,6 +321,12 @@ function parse_notes_for_legato_info(notes)
 				sub_strings_idx = sub_strings_idx + 1
 				sub_strings[sub_strings_idx] = notes
 			end
+		end
+		loop_counter = loop_counter + 1
+		if loop_counter > 100 then
+			reaper.ShowConsoleMsg("Got stuck in while parsing legato info. If you used '-' in the item notes, that caused the problem. Use letter 'n' for a negative sign instead. For instance, minus four, n4.")
+			loop_counter = 0
+			break;
 		end
 	end
 	local identifier_found = false
@@ -330,7 +343,7 @@ function parse_notes_for_legato_info(notes)
 				if digit_counter == 1 then
 					legato_interval = tonumber(word) -- need to check and include sign??
 					for w in string.gmatch(sub_strings[i], ".+") do 
-						if string.find(w, "-"..word) ~= nil then
+						if string.find(w, "n"..word) ~= nil then
 							legato_interval = (-1) * legato_interval
 						end
 					end
@@ -365,6 +378,7 @@ function parse_notes_for_legatosustain_info(notes)
 	local sub_strings_idx = 0
 	local comma_idx = 0
 	local digit_counter = 0
+	local loop_counter = 0
 
 	while comma_idx ~= nil do
 		comma_idx = string.find(notes, ",", 1) 
@@ -377,6 +391,12 @@ function parse_notes_for_legatosustain_info(notes)
 				sub_strings_idx = sub_strings_idx + 1
 				sub_strings[sub_strings_idx] = notes
 			end
+		end
+		loop_counter = loop_counter + 1
+		if loop_counter > 100 then
+			reaper.ShowConsoleMsg("Got stuck in while parsing legatosustain info. If you used '-' in the item notes, that caused the problem. Use letter 'n' for a negative sign instead. For instance, minus four, n4.")
+			loop_counter = 0
+			break;
 		end
 	end
 	local identifier_found = false
@@ -420,6 +440,7 @@ function parse_notes_for_sustain_info(notes)
 	local sub_strings_idx = 0
 	local comma_idx = 0
 	local digit_counter = 0
+	local loop_counter = 0
 
 	while comma_idx ~= nil do
 		comma_idx = string.find(notes, ",", 1) 
@@ -432,6 +453,12 @@ function parse_notes_for_sustain_info(notes)
 				sub_strings_idx = sub_strings_idx + 1
 				sub_strings[sub_strings_idx] = notes
 			end
+		end
+		loop_counter = loop_counter + 1
+		if loop_counter > 100 then
+			reaper.ShowConsoleMsg("Got stuck in while parsing sustain info. If you used '-' in the item notes, that caused the problem. Use letter 'n' for a negative sign instead. For instance, minus four, n4.")
+			loop_counter = 0
+			break;
 		end
 	end
 	local identifier_found = false
@@ -471,6 +498,7 @@ function parse_notes_for_start_info(notes)
 	local sub_strings_idx = 0
 	local comma_idx = 0
 	local digit_counter = 0
+	local loop_counter = 0
 	
 	while comma_idx ~= nil do
 		comma_idx = string.find(notes, ",", 1) 
@@ -483,6 +511,12 @@ function parse_notes_for_start_info(notes)
 				sub_strings_idx = sub_strings_idx + 1
 				sub_strings[sub_strings_idx] = notes
 			end
+		end
+		loop_counter = loop_counter + 1
+		if loop_counter > 100 then
+			reaper.ShowConsoleMsg("Got stuck in while parsing start info. If you used '-' in the item notes, that caused the problem. Use letter 'n' for a negative sign instead. For instance, minus four, n4.")
+			loop_counter = 0
+			break;
 		end
 	end
 	local identifier_found = false
