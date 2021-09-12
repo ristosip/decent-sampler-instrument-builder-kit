@@ -1437,13 +1437,26 @@ function build_instrument(command, parameter_count)
 							-- the legato mechanism goes from sustaining to a legato transition and back to sustain samples
 							-- thus a modified copy of the sustain group is added
 							group_string = string.gsub(group_string, group_info, group_info.." LEGATO-SUSTAIN GROUP")
-							group_string = string.gsub(group_string, "trigger=\"first\"", "trigger=\"legato\"")
-							group_string = string.gsub(group_string, "silencedByTags=\"legato,sustaingroup\"", "silencedByTags=\"legatosustain\"")
+							group_string = string.gsub(group_string, "trigger=\"attack\"", "trigger=\"legato\"")
+							group_string = string.gsub(group_string, "trigger=\"first\"", "trigger=\"legato\"") -- both "attack" and "first" modes are handled
+							if string.find(group_string, "silencedByTags=\"legato1,") == nil then
+								group_string = string.gsub(group_string, "silencedByTags=\"legato,sustaingroup", "silencedByTags=\"legatosustain")
+							else
+								group_string = string.gsub(group_string, "silencedByTags=\"legato1,sustaingroup", "silencedByTags=\"legatosustain")
+							end
 							group_string = string.gsub(group_string, "sustaingroup", "legatosustain")
-							group_string = string.gsub(group_string, "attack=".."\""..group_attack.."\"", "attack=".."\""..leg_sus_a.."\"")
-							group_string = string.gsub(group_string, "decay=".."\""..group_decay.."\"", "decay=".."\""..leg_sus_d.."\"")
-							group_string = string.gsub(group_string, "sustain=".."\""..group_sustain.."\"", "sustain=".."\""..leg_sus_s.."\"")
-							group_string = string.gsub(group_string, "release=".."\""..group_release.."\"", "release=".."\""..leg_sus_r.."\"")
+							if group_attack ~= nil and leg_sus_a ~= nil then
+								group_string = string.gsub(group_string, "attack=".."\""..group_attack.."\"", "attack=".."\""..leg_sus_a.."\"")
+							end
+							if group_decay ~= nil and leg_sus_d ~= nil then
+								group_string = string.gsub(group_string, "decay=".."\""..group_decay.."\"", "decay=".."\""..leg_sus_d.."\"")
+							end
+							if group_sustain ~= nil and leg_sus_s ~= nil then
+								group_string = string.gsub(group_string, "sustain=".."\""..group_sustain.."\"", "sustain=".."\""..leg_sus_s.."\"")
+							end
+							if group_release ~= nil and leg_sus_r ~= nil then
+								group_string = string.gsub(group_string, "release=".."\""..group_release.."\"", "release=".."\""..leg_sus_r.."\"")
+							end
 							groups_string = groups_string..group_string														
 						end
 						group_string = ""
@@ -1504,9 +1517,14 @@ function build_instrument(command, parameter_count)
 						group_attack = leg_sus_a
 						group_decay = leg_sus_d
 						group_sustain = leg_sus_s
-						group_release = leg_sus_r						
-						group_tags = append_tags(group_tags, "legatosustain") 
-						silencedByTags = "legato"					
+						group_release = leg_sus_r												
+						if mic_num == nil then
+							group_tags = append_tags(group_tags, "legatosustain") 
+							silencedByTags = "legatosustain"	
+						else
+							group_tags = append_tags(group_tags, "legatosustain"..mic_num) 
+							silencedByTags = "legatosustain"..mic_num
+						end
 						silencingMode = default_silencingMode
 					elseif group_sustain_group then
 						group_trigger = "attack" -- "first"
