@@ -33,6 +33,50 @@
 --
 --                                             Features/knobs/bindings are added if the default settings allow. See and modify the settings below.
 --
+-- True Legato:
+--                     In order to build a true legato instrument the script needs to know which samples are legato samples.
+--                     The first sample of each group must be marked with a keyword indicating whether the samples are sustain, legato, or legato-sustain samples. 
+--                     Once the samples have been arranged for export, the first sample of a group is the top-left sample under a folder track.
+--
+--                     Visualization:
+--
+--
+--                     | ViolinSusMic1 |
+--                                     |  1-65  |        |--first sample--|      |-----sample----|   ...
+--                                     | 66-127 |        |-----sample-----|      |-----sample----|   ...
+--                     | ViolinSusMic2 |
+--                                     |  1-65  |        |--first sample--|      |-----sample----|   ...
+--                                     | 66-127 |        |-----sample-----|      |-----sample----|   ...
+--
+--
+--                     The keyword marking and (optional) parameters are written in the item's 'notes'.
+--
+--                     Keyword Options:
+--
+--                                     'sustain                         [optional adsr values]'
+--                                     'legato           [interval]     [optional adsr values]' 
+--                                     'legatosustain                   [optional adsr values]' 
+--
+--                     Use a comma ',' to separate loop, start, and true legato information in the item's 'notes'.
+--                     For technical reasons '-' can not be used in the notes! A negative sign is indicated using 'n'. For example, '-2' ---> 'n2'.
+--
+--                     Example: 'loop 100875 4868993, start 4356, legato n1 10 0 100 50'
+--
+--                                                               (one semitone down, attack 10 ms, decay 0 ms, sustain 100%, release 50 ms)  
+--
+--
+--                    Types of true legato instruments:
+--
+--                                                        Sustain sample  --->  Legato sample
+--
+--                                                        Sustain sample  --->  Legato sample (transition only) ---> Legato-Sustain sample  
+--
+--                    If one of the groups is marked 'legatosustain', then the script will form the latter type of instrument. 
+--                    Notice that the volume envelopes are not formed automatically! A legato sample and the corresponding legato-sustain sample will start their playback at the same time.
+--                    
+--                    The sustain group can be marked both 'sustain' and 'legatosustain' if the same samples should be used after the legato transition.
+--
+--
 -- author: Risto Sipola
 
 ----------------------
