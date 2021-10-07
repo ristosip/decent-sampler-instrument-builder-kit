@@ -19,7 +19,6 @@ If the problem persists, continue by writing a bug report:
 		1. "Run the ... script.."
 		2. "Do this.."
 		3. "Do that.."
-		"  ...  ...  ... "
 		N. "After this you should see [the effect].."
 4. Optional: Send a (screen capture) video of the problem.
 	* Upload the video on youtube (as an unlisted video) and share the link.
