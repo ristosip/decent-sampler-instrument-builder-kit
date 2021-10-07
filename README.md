@@ -13,6 +13,9 @@ Before sending in a bug report, please take the following steps:
 	* This rule can be relaxed when it comes to modifying 'default settings'.
 	* If a certain default value setting is causing the problem, try to zero in on which variable setting breaks the script.
 
+
+
+
 If the problem persists, continue by writing a bug report:
 3. Try to give stepwise instructions on how to reproduce the effect. For example:  
 	* Run the ... script..
