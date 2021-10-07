@@ -13,9 +13,6 @@ Before sending in a bug report, please take the following steps:
 	* This rule can be relaxed when it comes to modifying 'default settings'.
 	* If a certain default value setting is causing the problem, try to zero in on which variable setting breaks the script.
 
-
-
-
 If the problem persists, continue by writing a bug report:
 1. Try to give stepwise instructions on how to reproduce the effect. For example:  
 	* "1. Run the ... script.."
@@ -25,7 +22,8 @@ If the problem persists, continue by writing a bug report:
 	* "N. After this you should see [the effect].."
 2. Optional: Send a (screen capture) video of the problem.
 	* Upload the video on youtube (as an unlisted video) and share the link.
-3. Further steps such as creating a project demonstration can be agreed upon after the initial report if needed.
+
+Further steps such as creating a project demonstration can be agreed upon after the initial report if needed.
 
 ------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------
