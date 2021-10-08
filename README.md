@@ -25,7 +25,7 @@ If the problem persists, continue by writing a bug report:
 
 Further steps such as creating a project demonstration can be agreed upon after the initial report if needed.
 
-                        --------------------		
+			--------------------		
 			rjs.audioprogramming 
 
 ------------------------------------------------------------------------------------
