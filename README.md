@@ -5,8 +5,7 @@ Lua scripts for Reaper that generate dspreset file contents for Decent Sampler. 
 ---------------------------    Contact info:   ---------------------------------
 --------------------------------------------------------------------------------
 
-			---gmai1 address---		
-			rjs.audioprogramming 
+Please find my gmai1 address below.
 
 Before sending in a bug report, please take the following steps:
 1. Double-check for an user error. Please see the documention in the script files and the tutorial videos for help.
@@ -25,6 +24,9 @@ If the problem persists, continue by writing a bug report:
 	* Upload the video on YouTube (as an unlisted video) and share the link.
 
 Further steps such as creating a project demonstration can be agreed upon after the initial report if needed.
+
+                        --------------------		
+			rjs.audioprogramming 
 
 ------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------
