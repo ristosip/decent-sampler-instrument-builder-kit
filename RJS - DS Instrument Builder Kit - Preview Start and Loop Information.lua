@@ -184,7 +184,7 @@ function preview_sample_start_and_loop()
 end
 
 gfx.init("Preview On", 500, 100, 0, 800, 200)
-my_str = "Previewing sample start and loop.\nStop by closing this window."
+my_str = "Previewing loops and start points.\nStop by closing this window."
 gfx.setfont(1, "Arial", 28)
 gfx.x, gfx.y = 20, 20
 gfx.drawstr(my_str)
