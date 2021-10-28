@@ -589,7 +589,7 @@ function append_tags_with_mic_info(tags_string, group_info)
 
 	local mic_num = parse_group_info_for_mic_num(group_info)
 	
-	if mic_num ~= -1 then
+	if mic_num ~= nil then
 		local comma = ","		
 		if tags_string == "" then
 			comma = ""
@@ -1395,7 +1395,7 @@ function count_mics(group_names, group_count)
 	for i = 1, group_count, 1 do
 		local group_name = group_names[i]
 		local mic_num = parse_group_info_for_mic_num(group_name)
-		if mic_num > max_mic_num then
+		if mic_num ~= nil and mic_num > max_mic_num then
 			max_mic_num = mic_num
 		end
 	end
