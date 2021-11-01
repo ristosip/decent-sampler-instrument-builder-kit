@@ -6,17 +6,24 @@
 --
 -- Note: 'Decent Sampler Instrument Builder Kit' is designed to work in conjunction with 'RJS Sampling Suite'.
 --
--- How to use:         1. Preparations: Arrange the samples using 'RJS Sampling Suite'.
---                     2. Run the script. (Use a marker as an input command if needed.)
---                     3. Copy the text from the message window that opens.
---                     4. Paste the text into an empty text file and save the file ( [name].dspreset ).
+-- How to use:         1.  Preparations: Arrange the samples using 'RJS Sampling Suite'. (The script will only process selected samples.*)
+--                     2.  Run the script. (Use a marker as an input command if needed.)
+--                     3a. Copy the text from the message window that opens.
+--                         - Paste the text into an empty text file and save the file ( [name].dspreset ).
+--                     3b. The script writes the contents straight into a file**. See the default settings below.
+--
+-- * The fact that the script processes only selected items can be useful if you want to create presets that use only a subset of the samples.
+-- ** Reaper's console message has a character limit. Presets with lots of samples need to be written straight into a file.
+--
 --
 -- Input Command:      'ds [instrument name] [options]'
 --
 --                      - If no input command is given the default build command is used.
 --                
---                      - [instrument name]: No functionality yet. This parameter can be omitted.
-
+--                      - [instrument name]: This sets the filename when writing the preset straight into a file.
+--                                            - The name cannot contain numbers, special characters, or spaces.
+--                                            - The name cannot contain the file extension. The file extension is added automatically.
+--
 --                      - [options]: List the features you want to add to the instrument.
 --                        * Available features: 
 --                                             ** reverb - Adds a reverb.
@@ -82,6 +89,16 @@
 ----------------------
 -- DEFAULT SETTINGS --
 ----------------------
+
+-- Reaper's Console output has a character limit. 
+-- If you hit this limit, you need to write straight into a file.
+-- Example: Path:     "C:/My/Path/On/My/Computer/"
+--          Filename: "MyInstrumentName"   (notice: no file extension (".dspreset") here!)
+default_want_to_write_into_a_file = false 
+default_OUTPUT_dspreset_path = ""
+default_OUTPUT_dspreset_filename = "defaultname"
+default_OUTPUT_dspreset_file_extension = ".dspreset"
+                                  
 
 fileFormat = ".wav"
 default_sample_folder_path = "Samples/" -- must end with "/"
@@ -176,7 +193,49 @@ default_seqMode = "round_robin" -- in case of round robins. otherwise "always".
 
 indent_char = " " -- affects how lines are indented in the preset file. for human-readibility.
 
-------------------------
+----------------------------------------------------------
+----------- Section For True Legato Samplists ------------
+----------------------------------------------------------
+
+-- This section will hopefully be unnecessary in the future. 
+-- At this time, it seems to me, that it's impossible to implement
+-- a "halfway" true-legato instrument without complications.
+-- By "halfway" I mean when there are no true-legato samples for every interval.
+-- For example, semitone and wholetone transitions could be "true" but larger intervals would be regular legatos.
+-- If one doesn't use the "filler intervals" method below then the instrument will suffer from the following:
+-- First note --> true legato --> big interval "legato" with no true-legato sample to land on.
+-- When there is no true-legato sample, whether a sound is produced or not depends on the sustain group's trigger.
+-- "attack" --> sustain group note plays over the last true-legato note in polyphony.
+-- "first"  --> the new key hit produces no sound while the last true-legato note keeps on playing.
+-- Pick your poison (below).
+-- No way around it, in my view, other than using the "filler groups" method.
+
+default_sustain_group_trigger = "attack" -- "first" would be technically correct.
+-------------------------------------------------------------
+-- A workaround using filler interval groups:
+-- A number of fake legato groups are formed out of the sustain group.
+-- The downside is that the dspreset file gets longer as the sustain group is cloned. 
+-- (The number of actual sample files will not change!)
+-- (Long .dspreset file is more annoying to modify by hand though.)
+-- If you don't want to use the fillers, set the values to zero.
+-- It looks like adding groups increases Decent Samplers memory footprint even when 
+-- the samples in different groups are the same.
+-- I did some stress testing: 
+-- 2000 groups caused a crash and failure to load the true-legato groups.
+-- 200 groups might work.
+-- 20 groups (an octave up and down) seems to work ok.
+-- Notice: This isn't really that much of a hack. 
+-- Ideally there would be the same amount of real true-legato groups anyway.
+
+default_range_of_filler_intervals_up = 12
+default_range_of_filler_intervals_down = 12
+
+---------------------------
+--- end of default settings
+---------------------------
+
+global_input_command_parameter_list = { "ds", "reverb", "filter", "adsr", "attack", "decay", "release", "micvol" } -- Do not modify!
+global_in_prm_count = 8
 
 function parse_input_command()
 
@@ -1410,8 +1469,6 @@ function count_round_robins(first_track_idx, num_tracks)
 		local num_items = reaper.CountTrackMediaItems(track)		
 		if num_items > 0 then			
 			for j = 0, num_items - 1, 1 do
-				local sample_silencedByTags, sample_silencingMode, sample_legatoInterval, sample_previousNotes
-				local item = reaper.GetTrackMediaItem(track, j)
 				local retval, group_info = reaper.GetTrackName(reaper.GetParentTrack(track))
 				if group_info == nil then
 					group_info = ""
@@ -1431,6 +1488,36 @@ function count_round_robins(first_track_idx, num_tracks)
 	return max_rr_num
 end
 
+function get_filler_interval_list()
+	local list = ""
+	local existing_intervals = {}
+	local ext_int_len = 0
+	local num_items = reaper.CountMediaItems(0)
+	for i = 0, num_items - 1, 1 do
+		local item = reaper.GetMediaItem(0, i)
+		if reaper.IsMediaItemSelected(item) then
+			local retval, notes = reaper.GetSetMediaItemInfo_String(item, "P_NOTES", "", false)
+			local group_legato, group_legato_interval, leg_a, leg_d, leg_s, leg_r = parse_notes_for_legato_info(notes)
+			if group_legato then
+				if group_legato_interval ~= nil and group_legato_interval ~= 0 then
+					ext_int_len = ext_int_len + 1
+					existing_intervals[ext_int_len] = group_legato_interval
+				end
+			end
+		end
+	end
+--	if ext_int_len > 0 then
+--		for i = 1, ext_int_len, 1 do
+--			list = list..existing_intervals[i]..        -- this feature is not possible to implement currently. it waits here to be used some day if possible
+--			if i < ext_int_len then
+--				list = list..", "
+--			end
+--		end
+--	end
+	--return list
+	return existing_intervals, ext_int_len
+end
+
 function build_instrument(command, parameter_count)
 	local ds_preset_string = ""
 	local groups_string = ""
@@ -1444,6 +1531,8 @@ function build_instrument(command, parameter_count)
 	local first_track_idx = reaper.GetMediaTrackInfo_Value(reaper.GetMediaItem_Track(reaper.GetSelectedMediaItem(0, 0)), "IP_TRACKNUMBER") - 1
 	local num_tracks = reaper.CountTracks(0)
 	local current_group_name = ""
+	local group_info, retval
+	local mic_num
 	local group_loop = false
 	local group_legato = false
 	local group_legato_interval
@@ -1461,26 +1550,58 @@ function build_instrument(command, parameter_count)
 		local track = reaper.GetTrack(0, i)
 		local retval, track_name = reaper.GetTrackName(track)
 		local num_items = reaper.CountTrackMediaItems(track)
-		local mic_num
 		
 		if num_items > 0 then
 			
 			for j = 0, num_items - 1, 1 do
 				local sample_silencedByTags, sample_silencingMode, sample_legatoInterval, sample_previousNotes
 				local item = reaper.GetTrackMediaItem(track, j)
-				local retval, group_info = reaper.GetTrackName(reaper.GetParentTrack(track))
+				retval, group_info = reaper.GetTrackName(reaper.GetParentTrack(track))
 				if group_info == nil then
 					group_info = ""
 				end
-				if j == 0 and group_info ~= current_group_name then
+				if j == 0 and group_info ~= current_group_name and reaper.IsMediaItemSelected(item) then
 					-- add a group
 					if i > first_track_idx then
 						group_string = add_element_closing_line(group_string, indent_amount - 1, "group")
 						groups_string = groups_string..group_string
+						-- creating a legato-group out of the sustain group to fill out the intervals that don't have true legato samples for them
+						if group_sustain_group then
+							local group_string_temp = group_string
+							group_string_temp = string.gsub(group_string_temp, "  "..current_group_name.."  ", "  "..current_group_name.." LEGATO FILLER GROUP".."  ")
+							group_string_temp = string.gsub(group_string_temp, "trigger=\"attack\"", "trigger=\"legato\"")
+							group_string_temp = string.gsub(group_string_temp, "trigger=\"first\"", "trigger=\"legato\"") -- both "attack" and "first" modes are handled
+							if string.find(group_string_temp, "silencedByTags=\"legato1,") == nil then
+								group_string_temp = string.gsub(group_string_temp, "silencedByTags=\"legato,sustaingroup", "silencedByTags=\"legato")
+							else
+								group_string_temp = string.gsub(group_string_temp, "silencedByTags=\"legato1,sustaingroup", "silencedByTags=\"legato")
+							end
+							group_string_temp = string.gsub(group_string_temp, "sustaingroup", "legato") -- replacing a tag
+							--local filler_interval_string = get_filler_interval_list() -- waiting for future developments							
+							--group_string_temp = string.gsub(group_string_temp, "\" >", "\" legatoInterval=".."\""..filler_interval_string.."\" >")
+							--groups_string = groups_string..group_string_temp
+							local intervals, int_table_len = get_filler_interval_list()
+							if int_table_len > 0 then
+								for i = -default_range_of_filler_intervals_down, default_range_of_filler_intervals_up, 1 do
+									local exists = false
+									for j = 1, int_table_len, 1 do
+										if i == intervals[j] or i == 0 then
+											exists = true
+											break
+										end
+									end
+									if not exists then
+										groups_string = groups_string..string.gsub(group_string_temp, "\" >", "\" legatoInterval=".."\""..i.."\" >")
+									end
+								end
+							end
+						end
+						--
+						-- creating legato-sustain-group if needed
 						if group_sustain_group and group_legatosustain then 
 							-- the legato mechanism goes from sustaining to a legato transition and back to sustain samples
 							-- thus a modified copy of the sustain group is added
-							group_string = string.gsub(group_string, group_info, group_info.." LEGATO-SUSTAIN GROUP")
+							group_string = string.gsub(group_string, "  "..current_group_name.."  ", "  "..current_group_name.." LEGATO-SUSTAIN GROUP".."  ")
 							group_string = string.gsub(group_string, "trigger=\"attack\"", "trigger=\"legato\"")
 							group_string = string.gsub(group_string, "trigger=\"first\"", "trigger=\"legato\"") -- both "attack" and "first" modes are handled
 							if string.find(group_string, "silencedByTags=\"legato1,") == nil then
@@ -1501,7 +1622,7 @@ function build_instrument(command, parameter_count)
 							if group_release ~= nil and leg_sus_r ~= nil then
 								group_string = string.gsub(group_string, "release=".."\""..group_release.."\"", "release=".."\""..leg_sus_r.."\"")
 							end
-							groups_string = groups_string..group_string														
+							groups_string = groups_string..group_string									
 						end
 						group_string = ""
 					end
@@ -1542,6 +1663,8 @@ function build_instrument(command, parameter_count)
 					group_legatosustain, leg_sus_a, leg_sus_d, leg_sus_s, leg_sus_r = parse_notes_for_legatosustain_info(notes)					
 					group_sustain_group, sus_a, sus_d, sus_s, sus_r = parse_notes_for_sustain_info(notes)
 
+					local add_info = "" -- needed for legatosustain title -- for file content readibility
+
 					if group_legato then
 						group_trigger = "legato"
 						group_attack = leg_a
@@ -1570,8 +1693,9 @@ function build_instrument(command, parameter_count)
 							silencedByTags = "legatosustain"..mic_num
 						end
 						silencingMode = default_silencingMode
+						add_info = "legato"
 					elseif group_sustain_group then
-						group_trigger = "attack" -- "first"
+						group_trigger = default_sustain_group_trigger
 						if sus_a ~= nil then
 							group_attack = sus_a
 						else	
@@ -1603,7 +1727,7 @@ function build_instrument(command, parameter_count)
 					end
 					-- form a group
 					group_string = add_comment_line(group_string, indent_amount - 1, "--------------------------------")
-					group_string = add_comment_line(group_string, indent_amount - 1, "-----------    "..group_info.."     ")
+					group_string = add_comment_line(group_string, indent_amount - 1, "-----------    "..add_info..group_info.."     ")
 					group_string = add_comment_line(group_string, indent_amount - 1, "--------------------------------")
 					group_string = add_group_element(group_string, indent_amount - 1, group_trigger, seqPosition, group_loop, loop_crossfade, group_tags, group_attack, group_decay, group_sustain, group_release, silencedByTags, silencingMode, previousNotes, group_legato_interval)
 					current_group_name = group_info
@@ -1632,22 +1756,73 @@ function build_instrument(command, parameter_count)
 				end
 								
 				-- add samples under the group
-				group_string = add_sample_element(group_string, indent_amount, group_info, rootNote, loNote, hiNote, loVel, hiVel, sample_start, nil, sample_tags, sample_loop, sample_loop_start, sample_loop_end, sample_loop_crossfade, sample_silencedByTags, sample_silencingMode, sample_legatoInterval, sample_previousNotes)
+				if reaper.IsMediaItemSelected(item) then
+					group_string = add_sample_element(group_string, indent_amount, group_info, rootNote, loNote, hiNote, loVel, hiVel, sample_start, nil, sample_tags, sample_loop, sample_loop_start, sample_loop_end, sample_loop_crossfade, sample_silencedByTags, sample_silencingMode, sample_legatoInterval, sample_previousNotes)
+				end
 			end
 		end
 	end
 	group_string = add_element_closing_line(group_string, indent_amount - 1, "group")
 	groups_string = groups_string..group_string -- add the last group
+	
+	-- creating a legato-group out of the sustain group to fill out the intervals that don't have true legato samples for them
+	if group_sustain_group then
+		local group_string_temp = group_string
+		group_string_temp = string.gsub(group_string_temp, "  "..group_info.."  ", "  "..group_info.." LEGATO FILLER GROUP".."  ")
+		group_string_temp = string.gsub(group_string_temp, "trigger=\"attack\"", "trigger=\"legato\"")
+		group_string_temp = string.gsub(group_string_temp, "trigger=\"first\"", "trigger=\"legato\"") -- both "attack" and "first" modes are handled
+		if string.find(group_string_temp, "silencedByTags=\"legato1,") == nil then
+			group_string_temp = string.gsub(group_string_temp, "silencedByTags=\"legato,sustaingroup", "silencedByTags=\"legato")
+		else
+			group_string_temp = string.gsub(group_string_temp, "silencedByTags=\"legato1,sustaingroup", "silencedByTags=\"legato")
+		end
+		group_string_temp = string.gsub(group_string_temp, "sustaingroup", "legato") -- replacing a tag
+		--local filler_interval_string = get_filler_interval_list() -- waiting for future developments							
+		--group_string_temp = string.gsub(group_string_temp, "\" >", "\" legatoInterval=".."\""..filler_interval_string.."\" >")
+		--groups_string = groups_string..group_string_temp
+		local intervals, int_table_len = get_filler_interval_list()
+		if int_table_len > 0 then
+			for i = -default_range_of_filler_intervals_down, default_range_of_filler_intervals_up, 1 do
+				local exists = false
+				for j = 1, int_table_len, 1 do
+					if i == intervals[j] or i == 0 then
+						exists = true
+						break
+					end
+				end
+				if not exists then
+					groups_string = groups_string..string.gsub(group_string_temp, "\" >", "\" legatoInterval=".."\""..i.."\" >")
+				end
+			end
+		end	
+	end
+	--
+	-- creating legato-sustain-group if needed
 	if group_sustain_group and group_legatosustain then 
 		-- the legato mechanism goes from sustaining to a legato transition and back to sustain samples
 		-- thus a modified copy of the sustain group is added
-		group_string = string.gsub(group_string, group_info, group_info.." LEGATO-SUSTAIN GROUP")
-		group_string = string.gsub(group_string, "trigger=\"first\"", "trigger=\"legato\"")
-		group_string = string.gsub(group_string, "silencedByTags=\"legato\"", "silencedByTags=\"legatosustain\"")
+		group_string = string.gsub(group_string, "  "..group_info.."  ", "  "..group_info.." LEGATO-SUSTAIN GROUP".."  ")
+		group_string = string.gsub(group_string, "trigger=\"attack\"", "trigger=\"legato\"")
+		group_string = string.gsub(group_string, "trigger=\"first\"", "trigger=\"legato\"") -- both "attack" and "first" modes are handled
+		if string.find(group_string, "silencedByTags=\"legato1,") == nil then
+			group_string = string.gsub(group_string, "silencedByTags=\"legato,sustaingroup", "silencedByTags=\"legatosustain")
+		else
+			group_string = string.gsub(group_string, "silencedByTags=\"legato1,sustaingroup", "silencedByTags=\"legatosustain")
+		end
 		group_string = string.gsub(group_string, "sustaingroup", "legatosustain")
-		group_string = string.gsub(group_string, "attack=".."\""..group_attack.."\"", "attack=".."\""..leg_sus_a.."\"")
-		group_string = string.gsub(group_string, "release=".."\""..group_release.."\"", "release=".."\""..leg_sus_r.."\"")
-		groups_string = groups_string..group_string
+		if group_attack ~= nil and leg_sus_a ~= nil then
+			group_string = string.gsub(group_string, "attack=".."\""..group_attack.."\"", "attack=".."\""..leg_sus_a.."\"")
+		end
+		if group_decay ~= nil and leg_sus_d ~= nil then
+			group_string = string.gsub(group_string, "decay=".."\""..group_decay.."\"", "decay=".."\""..leg_sus_d.."\"")
+		end
+		if group_sustain ~= nil and leg_sus_s ~= nil then
+			group_string = string.gsub(group_string, "sustain=".."\""..group_sustain.."\"", "sustain=".."\""..leg_sus_s.."\"")
+		end
+		if group_release ~= nil and leg_sus_r ~= nil then
+			group_string = string.gsub(group_string, "release=".."\""..group_release.."\"", "release=".."\""..leg_sus_r.."\"")
+		end
+		groups_string = groups_string..group_string	
 	end	
 	
 	local mic_count = count_mics(group_names, group_count)
@@ -1672,10 +1847,10 @@ function build_instrument(command, parameter_count)
 	ds_preset_string = add_knobs_and_controls(ds_preset_string, indent_amount, command, parameter_count, mic_count)
 	
 	-- close tab
-	indent_amount = indent_amount -1
+	indent_amount = indent_amount - 1
 	ds_preset_string = add_element_closing_line(ds_preset_string, indent_amount, "tab")	
 	-- close ui
-	indent_amount = indent_amount -1
+	indent_amount = indent_amount - 1
 	ds_preset_string = add_element_closing_line(ds_preset_string, indent_amount, "ui")
 	
 	-- groups
@@ -1741,11 +1916,41 @@ end
 function main()
 
 	local ds_preset_string = ""
+	local filename = default_OUTPUT_dspreset_filename
 	
 	if reaper.CountSelectedMediaItems(0) > 0 then
 		local command, parameter_count = parse_input_command()
-		ds_preset_string = build_instrument(command, parameter_count)				
-		reaper.ShowConsoleMsg(ds_preset_string)
+		ds_preset_string = build_instrument(command, parameter_count)	
+
+		if parameter_count > 0 then
+			for i = 1, parameter_count, 1 do
+				local isName = true 
+				for j = 1, global_in_prm_count, 1 do
+					if command[i] == global_input_command_parameter_list[j] then
+						isName = false
+					end
+				end
+				if isName then
+					filename = command[i]
+					break;
+				end
+			end
+		end
+		
+		if default_want_to_write_into_a_file then
+					
+			if default_OUTPUT_dspreset_path ~= ""  and filename ~= "" and default_OUTPUT_dspreset_file_extension ~= "" then		
+				local file = assert(io.open(default_OUTPUT_dspreset_path..filename..default_OUTPUT_dspreset_file_extension, "w"))
+				file:write(ds_preset_string)
+				file:flush()
+				file:close()
+				reaper.ShowConsoleMsg("Wrote the contents into a file:  "..default_OUTPUT_dspreset_path..filename..default_OUTPUT_dspreset_file_extension)
+			else
+				reaper.ShowConsoleMsg("Unable to write into a file: Path missing.\nSet the path by modifying the default settings in the script file.")
+			end
+		else
+			reaper.ShowConsoleMsg(ds_preset_string)
+		end
 	end
 	
 end
